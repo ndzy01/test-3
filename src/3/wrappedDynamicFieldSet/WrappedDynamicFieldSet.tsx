@@ -1,11 +1,11 @@
 import React from 'react';
 import { Form, Input, Icon, Button } from 'antd';
-import './WrappedDynamicFieldSet .scss';
+import './WrappedDynamicFieldSet.scss';
 interface Props {
   [propsName: string]: any;
 }
 interface State {
-  [propsName: string]: any; 
+  [propsName: string]: any;
 }
 
 let id = 0;
