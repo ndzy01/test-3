@@ -2,19 +2,8 @@ import React from 'react';
 import { Table, Input, Form, Button, Icon, Popconfirm } from 'antd';
 import data_ from './data';
 
-// const data: any[] = [];
-// for (let i = 0; i < 10; i++) {
-//   data.push({
-//     key: i.toString(),
-//     key1: `Edrward ${i}`,
-//     key2: `London Park no. ${i}`,
-//     key3: 32
-//   });
-// }
-
 const handleGetData = (data: any[]) => {
   let arr: any[] = [];
-
   if (data[0].children && data[0].children.length > 0) {
     [...data[0].children].map((item) => {
       item.children = item.children.map((item_: any) => {
@@ -114,6 +103,7 @@ class EditableCell extends React.Component<any, any> {
                         this.props.treeData,
                         this.props.record.key
                       );
+                      this.props.setTreeData(tree);
                       // TODO:更新数据
                       console.log(tree);
                     }}
@@ -131,43 +121,26 @@ class EditableCell extends React.Component<any, any> {
           }
           onBlur={(e) => {
             const key = this.props.record.key;
-            const { tableData, treeData } = this.props;
+            const { treeData } = this.props;
             const obj = {
-              key1: form.getFieldValue(`key1_${key}`),
-              key2: form.getFieldValue(`key2_${key}`),
-              key3: form.getFieldValue(`key3_${key}`)
-            };
-
-            const obj1 = {
               paramName: form.getFieldValue(`key2_${key}`),
               mark: form.getFieldValue(`key3_${key}`)
             };
+            treeData[0].children = [...treeData[0].children].map((item) => {
+              item.children = item.children.map((item_: any) => {
+                if (String(item_.id) === String(key)) {
+                  item_ = { ...item_, ...obj };
+                  return item_;
+                }
+                return item_;
+              });
+              return item;
+            });
             form.validateFields((error: any, row: any) => {
               if (error) {
                 return;
               }
-
-              treeData[0].children = [...treeData[0].children].map((item) => {
-                item.children = item.children.map((item_: any) => {
-                  if (String(item_.id) === String(key)) {
-                    item_ = { ...item_, ...obj1 };
-                    return item_;
-                  }
-                  return item_;
-                });
-                return item;
-              });
-              console.log(treeData);
-
-              const newDate = [...tableData].map((item: any) => {
-                if (item.key === key) {
-                  item = { ...item, ...obj };
-                }
-                return item;
-              });
-              // console.log(newDate);
-              this.props.setDate(newDate);
-              this.props.setDate(treeData);
+              this.props.setTreeData(treeData);
             });
           }}
         />
@@ -179,7 +152,7 @@ class EditableCell extends React.Component<any, any> {
   handleValidate = (
     dataIndex: any,
     record: any,
-    tableData: any,
+    treeData: any,
     rule: any,
     value: any,
     callback: any
@@ -189,11 +162,10 @@ class EditableCell extends React.Component<any, any> {
     if (dataIndex === 'key3') {
       const flag = reg.test(value);
       if (flag) {
-        // console.log(record);
         const allCount = record.count; // 每一大项的总分
-        const newData = [...tableData];
+        const data = handleGetData(treeData);
         let count = 0;
-        newData
+        data
           .map((item) => {
             if (item.id === record.id) {
               item.mark = value;
@@ -222,7 +194,7 @@ class EditableCell extends React.Component<any, any> {
     const { getFieldDecorator } = form;
 
     const {
-      tableData,
+      treeData,
       dataIndex,
       title,
       inputType,
@@ -246,7 +218,7 @@ class EditableCell extends React.Component<any, any> {
                   this,
                   dataIndex,
                   record,
-                  tableData
+                  treeData
                 )
               }
             ],
@@ -266,16 +238,11 @@ class EditableTable extends React.Component<any, any> {
   constructor(props: any) {
     super(props);
     this.state = {
-      data: handleGetData(data_),
       treeData: data_
     };
   }
-  setDate = (data: any) => {
-    this.setState({
-      data
-    });
-  };
-  seeTreeData = (treeData: any) => {
+
+  setTreeData = (treeData: any) => {
     this.setState({
       treeData
     });
@@ -291,14 +258,12 @@ class EditableTable extends React.Component<any, any> {
       return {
         ...col,
         onCell: (record: any) => ({
-          tableData: this.state.data,
           treeData: this.state.treeData,
           record,
           inputType: col.inputType || 'text',
           dataIndex: col.dataIndex,
           title: col.title,
-          setDate: this.setDate.bind(this),
-          seeTreeData: this.seeTreeData.bind(this)
+          setTreeData: this.setTreeData.bind(this)
         })
       };
     });
@@ -308,14 +273,13 @@ class EditableTable extends React.Component<any, any> {
         <Table
           components={components}
           bordered
-          // dataSource={this.state.data}
           dataSource={handleGetData(this.state.treeData)}
           columns={columns}
           pagination={false}
         />
         <Button
           onClick={() => {
-            console.log(this.state.data);
+            console.log(handleGetData(this.state.treeData));
           }}
         >
           提交
