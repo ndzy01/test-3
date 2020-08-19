@@ -1,4 +1,5 @@
 import React from 'react';
+import * as _ from 'lodash';
 import { Table, Input, Form, Button, Icon, Popconfirm } from 'antd';
 import data_ from './data';
 
@@ -35,8 +36,12 @@ const handleGetData = (data: any[]) => {
   }
   return arr;
 };
-
-const handleDeleteTree = (data: any[], key: any) => {
+/**
+ * @description 删除树结构中的某一项
+ * @param data
+ * @param key
+ */
+const deleteFromTreeGlobal = (data: any[], key: any) => {
   if (data[0].children && data[0].children.length > 0) {
     data[0].children = [...data[0].children].map((item) => {
       item.children = item.children.filter(
@@ -47,6 +52,54 @@ const handleDeleteTree = (data: any[], key: any) => {
   }
   return data;
 };
+
+const addToTreeGlobal = (data: any[], key: any) => {
+  const deep1 = _.cloneDeep(data);
+  const deep2 = _.cloneDeep(data);
+
+  let itemId: any;
+  let leaf: any;
+  let idArr: any[] = [];
+  let idIndex: any;
+  if (deep1[0].children && deep1[0].children.length > 0) {
+    [...deep1[0].children].map((item, idex_) => {
+      item.children.map((item_: any) => {
+        if (String(item_.id) === String(key)) {
+          idIndex = idex_;
+          leaf = item_;
+          leaf.paramName = '';
+          leaf.mark = '';
+          leaf.isNew = 1;
+          itemId = item.id;
+        }
+        return item_;
+      });
+      return item;
+    });
+  }
+  if (deep2[0].children && deep2[0].children.length > 0) {
+    [...deep2[0].children]
+      .filter((item) => String(item.id) === String(itemId))[0]
+      .children.map((item: any) => {
+        idArr.push(item.id);
+        return item;
+      });
+    idArr = idArr
+      .map((item) => parseInt(item))
+      .sort(function (a, b) {
+        return a - b;
+      });
+    leaf.id = idArr[idArr.length - 1] + 1;
+  }
+  console.log(data);
+
+  if (data[0].children && data[0].children.length > 0) {
+    data[0].children[idIndex].children.push(leaf);
+  }
+  return data;
+};
+
+
 
 const handleColumns = (that: any) => {
   const columns = [
@@ -72,14 +125,14 @@ const handleColumns = (that: any) => {
       dataIndex: 'key2',
       width: '40%',
       editable: true,
-      inputType: 'input'
+      inputType: 'input1'
     },
     {
       title: '总分',
       dataIndex: 'key3',
       width: '15%',
       editable: true,
-      inputType: 'input'
+      inputType: 'input2'
     }
   ];
   return columns;
@@ -88,36 +141,41 @@ const handleColumns = (that: any) => {
 const { Provider, Consumer } = React.createContext(null);
 
 class EditableCell extends React.Component<any, any> {
+  handleDelete = () => {
+    const tree = deleteFromTreeGlobal(
+      this.props.treeData,
+      this.props.record.key
+    );
+    this.props.setTreeData(tree);
+  };
+  handleAdd = () => {
+    const tree = addToTreeGlobal(this.props.treeData, this.props.record.key);
+    this.props.setTreeData(tree);
+  };
   getInput = (form: any) => {
-    if (this.props.inputType === 'input') {
+    if (this.props.inputType !== 'text') {
       return (
         <Input
           suffix={
-            <span>
-              {this.props.record.isDelete !== 1 ? (
-                <span>
-                  <Popconfirm
-                    title="确定要删除吗？"
-                    onConfirm={() => {
-                      const tree = handleDeleteTree(
-                        this.props.treeData,
-                        this.props.record.key
-                      );
-                      this.props.setTreeData(tree);
-                      // TODO:更新数据
-                      console.log(tree);
-                    }}
-                  >
-                    <Icon type="delete" />
-                  </Popconfirm>
-                </span>
-              ) : null}
-              {this.props.record.isAdd === 1 ? (
-                <span>
-                  <Icon type="plus" />
-                </span>
-              ) : null}
-            </span>
+            this.props.inputType === 'input2' ? (
+              <span>
+                {this.props.record.isDelete !== 1 ? (
+                  <span>
+                    <Popconfirm
+                      title="确定要删除吗？"
+                      onConfirm={this.handleDelete.bind(this)}
+                    >
+                      <Icon type="delete" />
+                    </Popconfirm>
+                  </span>
+                ) : null}
+                {this.props.record.isAdd === 1 ? (
+                  <span onClick={this.handleAdd.bind(this)}>
+                    <Icon type="plus" />
+                  </span>
+                ) : null}
+              </span>
+            ) : null
           }
           onBlur={(e) => {
             const key = this.props.record.key;
@@ -158,7 +216,6 @@ class EditableCell extends React.Component<any, any> {
     callback: any
   ) => {
     const reg = /^[1-9]+[0-9]*$/;
-    // console.log(tableData);
     if (dataIndex === 'key3') {
       const flag = reg.test(value);
       if (flag) {
@@ -184,7 +241,7 @@ class EditableCell extends React.Component<any, any> {
           callback(record.key1 + '！');
         }
       } else {
-        callback('只能输入正整数');
+        callback('需要输入一个整数');
       }
     }
     callback();

@@ -1,7 +1,7 @@
 import React from 'react';
 import './App.css';
 import WrappedDynamicFieldSet from './3/wrappedDynamicFieldSet';
-import EditTableRow from './3/editTableRow/EditTableRow02';
+import EditTableRow from './3/editTableRow/editTableRow01/index';
 
 function App() {
   return (
